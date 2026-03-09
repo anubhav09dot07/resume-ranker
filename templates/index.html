@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResumeRank — AI Candidate Matching</title>
+<style>
+  :root {
+    --bg: #f3f5f7;
+    --surface: #ffffff;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --accent: #111827;
+    --accent2: #2563eb;
+    --accent3: #0891b2;
+    --danger: #dc2626;
+    --radius: 14px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background:
+      radial-gradient(circle at 8% -10%, rgba(17,24,39,0.06), transparent 40%),
+      radial-gradient(circle at 100% 0%, rgba(37,99,235,0.07), transparent 38%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+  }
+
+  .orb { display: none; }
+
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(243,245,247,0.92);
+    backdrop-filter: blur(10px);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .badge {
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    background: #eef2ff;
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+    color: #1d4ed8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .hero {
+    padding: 44px 0 30px;
+    animation: fadeDown 0.45s ease both;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+
+  .hero-tag::before {
+    content: '';
+    width: 18px;
+    height: 1px;
+    background: #94a3b8;
+  }
+
+  h1 {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: clamp(1.9rem, 4.2vw, 2.9rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--text);
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 0.84rem;
+    max-width: 620px;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 22px 0 26px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+
+  .stat-num {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1.95rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    background: #eef2f6;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 5px;
+    width: fit-content;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: #475569;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(15,23,42,0.08);
+  }
+
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .tab-content { display: none; }
+  .tab-content.active {
+    display: block;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .form-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+
+  .panel-title {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+
+  textarea, select {
+    width: 100%;
+    background: #fcfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.78rem;
+    padding: 12px 14px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.55;
+  }
+
+  textarea:focus, select:focus {
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 3px rgba(148,163,184,0.15);
+  }
+
+  textarea { min-height: 200px; }
+  select { cursor: pointer; }
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-bottom: 8px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .field { margin-bottom: 18px; }
+
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  .range-val {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 22px;
+    text-align: center;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.84rem;
+    letter-spacing: 0.03em;
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.2s ease, opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #ffffff;
+    width: 100%;
+  }
+
+  .btn-primary:hover { background: #1f2937; }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-primary:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 36px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid #e2e8f0;
+    border-top-color: var(--accent2);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  #results-section { display: none; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .results-title {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1.06rem;
+    font-weight: 700;
+  }
+
+  .results-count {
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .candidate-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  .candidate-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+  }
+
+  .candidate-card:nth-child(1) { animation-delay: 0.04s; }
+  .candidate-card:nth-child(2) { animation-delay: 0.08s; }
+  .candidate-card:nth-child(3) { animation-delay: 0.12s; }
+  .candidate-card:nth-child(4) { animation-delay: 0.16s; }
+  .candidate-card:nth-child(5) { animation-delay: 0.2s; }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+
+  .rank-badge {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+
+  .rank-1 { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .rank-2 { background: #eef2f7; color: #334155; border: 1px solid #dbe2ea; }
+  .rank-3 { background: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+  .rank-n { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+  .card-left {
+    display: flex;
+    align-items: flex-start;
+    flex: 1;
+  }
+
+  .card-meta { flex: 1; }
+
+  .candidate-cat {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .candidate-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 0.64rem;
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+    border: 1px solid transparent;
+  }
+
+  .tag-exp { background: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
+  .tag-edu { background: #ecfeff; color: #155e75; border-color: #cffafe; }
+
+  .score-circle {
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .score-num {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .fit-pill {
+    font-size: 0.64rem;
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+    display: inline-block;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .score-bars { margin-bottom: 14px; }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .bar-label {
+    font-size: 0.66rem;
+    color: var(--muted);
+    width: 92px;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 5px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s ease;
+    width: 0;
+  }
+
+  .bar-val {
+    font-size: 0.66rem;
+    color: var(--muted);
+    width: 32px;
+    text-align: right;
+  }
+
+  .skills-section { margin-top: 12px; }
+
+  .skills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+  }
+
+  .skill-chip {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+  }
+
+  .chip-matched { background: #ecfeff; color: #0e7490; border-color: #bae6fd; }
+  .chip-missing { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+  .chip-bonus { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+
+  .skills-title {
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .card-toggle {
+    font-size: 0.7rem;
+    color: #475569;
+    cursor: pointer;
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 0;
+    transition: color 0.2s;
+  }
+
+  .card-toggle:hover { color: var(--text); }
+
+  .card-detail { display: none; margin-top: 12px; }
+  .card-detail.open { display: block; }
+
+  .preview-text {
+    font-size: 0.74rem;
+    color: #475569;
+    line-height: 1.65;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .gap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  #gap-result { display: none; }
+
+  .gap-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .gap-stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .gap-stat-num {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+  }
+
+  .gap-stat-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .gap-donut {
+    position: relative;
+    width: 160px;
+    height: 160px;
+  }
+
+  .gap-donut svg { transform: rotate(-90deg); }
+
+  .donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .donut-pct {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 1.9rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .donut-lbl {
+    font-size: 0.63rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .cat-row {
+    background: #fbfcff;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .cat-name {
+    font-size: 0.7rem;
+    color: #475569;
+    margin-bottom: 8px;
+  }
+
+  .cat-bar-track {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+
+  .cat-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent2);
+    transition: width 1s ease;
+  }
+
+  .cat-score {
+    font-size: 0.66rem;
+    color: var(--accent2);
+  }
+
+  .error-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--danger);
+    font-size: 0.76rem;
+    display: none;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 900px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .gap-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr; }
+    .gap-summary { grid-template-columns: 1fr 1fr; }
+    .category-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 560px) {
+    .container { padding: 0 14px; }
+    .hero { padding-top: 30px; }
+    .form-panel { padding: 14px; }
+    .tabs { width: 100%; }
+    .tab { flex: 1; text-align: center; }
+    .gap-summary { grid-template-columns: 1fr; }
+    .card-top { flex-direction: column; }
+    .score-circle { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<header>
+  <div class="container header-inner">
+    <div class="logo">Resume<span>Rank</span></div>
+    <span class="badge">ML Powered</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-tag">Automated Candidate Screening</div>
+    <h1>Match Resumes to<br><em>Any Job Description</em></h1>
+    <p class="hero-sub">AI-powered ranking using TF-IDF similarity, NLP skill extraction, experience scoring, and weighted gap analysis.</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num">stats.total_resumes </div>
+      <div class="stat-label">Resumes in dataset</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num"> stats.total_categories</div>
+      <div class="stat-label">Job categories</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">5</div>
+      <div class="stat-label">Scoring factors</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('ranking', this)">Resume Ranking</button>
+    <button class="tab" onclick="switchTab('gap', this)">Gap Analysis</button>
+  </div>
+
+  <!-- ══ TAB 1: RANKING ══ -->
+  <div id="tab-ranking" class="tab-content active">
+
+    <div class="form-grid">
+      <!-- JD input -->
+      <div class="form-panel">
+        <div class="panel-title">Job Description</div>
+        <div class="field">
+          <textarea id="jd-input" placeholder="Paste your job description here...
+
+Example:
+We are looking for a Data Scientist with 3+ years of experience.
+Required skills: Python, Machine Learning, TensorFlow, SQL.
+Bachelors degree required. AWS experience is a plus."></textarea>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="form-panel">
+        <div class="panel-title">Filters</div>
+
+        <div class="field">
+          <label>Job Category</label>
+          <select id="category-select">
+            {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Top N Results</label>
+          <div class="range-row">
+            <input type="range" id="top-n" min="5" max="20" value="10"
+                   oninput="document.getElementById('top-n-val').textContent=this.value">
+            <span class="range-val" id="top-n-val">10</span>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:8px;">
+          <label style="margin-bottom:12px;">Scoring Weights</label>
+          <div class="bar-row">
+            <span class="bar-label">Skill Match</span>
+            <div class="bar-track"><div class="bar-fill" style="width:40%;background:var(--accent)"></div></div>
+            <span class="bar-val">40%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">TF-IDF</span>
+            <div class="bar-track"><div class="bar-fill" style="width:25%;background:var(--accent2)"></div></div>
+            <span class="bar-val">25%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Experience</span>
+            <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--accent3)"></div></div>
+            <span class="bar-val">20%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Education</span>
+            <div class="bar-track"><div class="bar-fill" style="width:10%;background:#a78bfa"></div></div>
+            <span class="bar-val">10%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Keywords</span>
+            <div class="bar-track"><div class="bar-fill" style="width:5%;background:#38bdf8"></div></div>
+            <span class="bar-val">5%</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="rankResumes()" id="rank-btn">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+          Rank Candidates
+        </button>
+      </div>
+    </div>
+
+    <div class="error-box" id="rank-error"></div>
+    <div class="loading" id="rank-loading">
+      <div class="spinner"></div>
+      <div>Analyzing resumes...</div>
+    </div>
+
+    <div id="results-section">
+      <div class="results-header">
+        <div class="results-title">Ranked Candidates</div>
+        <div class="results-count" id="results-count"></div>
+      </div>
+      <div id="results-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ══ TAB 2: GAP ANALYSIS ══ -->
+  <div id="tab-gap" class="tab-content">
+
+    <div class="gap-grid">
+      <div class="form-panel">
+        <div class="panel-title">Resume Text</div>
+        <textarea id="gap-resume" placeholder="Paste a candidate's resume text here..."></textarea>
+      </div>
+      <div class="form-panel">
+        <div class="panel-title">Job Description</div>
+        <textarea id="gap-jd" placeholder="Paste the job description here..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="runGapAnalysis()" id="gap-btn" style="max-width:280px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      Run Gap Analysis
+    </button>
+
+    <div class="error-box" id="gap-error" style="margin-top:16px;"></div>
+    <div class="loading" id="gap-loading" style="margin-top:16px;">
+      <div class="spinner"></div>
+      <div>Running analysis...</div>
+    </div>
+
+    <div id="gap-result">
+      <!-- Summary stats -->
+      <div class="gap-summary" style="margin-top:28px;">
+        <div class="gap-stat">
+          <div class="gap-stat-num" id="g-matched" style="color:var(--accent)">—</div>
+          <div class="gap-stat-label">Matched Skills</div>
+        </div>
+        <div class="gap-stat">
+          <div class="gap-stat-num" id="g-missing" style="color:var(--danger)">—</div>
+          <div class="gap-stat-label">Missing Skills</div>
+        </div>
+        <div class="gap-stat">
+          <div class="gap-stat-num" id="g-bonus" style="color:var(--accent2)">—</div>
+          <div class="gap-stat-label">Bonus Skills</div>
+        </div>
+        <div class="gap-stat">
+          <div class="gap-stat-num" id="g-total" style="color:var(--accent3)">—</div>
+          <div class="gap-stat-label">Required Skills</div>
+        </div>
+      </div>
+
+      <!-- Donut chart + fit label -->
+      <div style="display:flex;align-items:center;gap:40px;margin-bottom:28px;flex-wrap:wrap;">
+        <div class="gap-donut">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="60" fill="none" stroke="var(--border)" stroke-width="18"/>
+            <circle id="donut-circle" cx="80" cy="80" r="60" fill="none"
+                    stroke="var(--accent)" stroke-width="18"
+                    stroke-dasharray="377" stroke-dashoffset="377"
+                    stroke-linecap="round"
+                    style="transition:stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1)"/>
+          </svg>
+          <div class="donut-center">
+            <span class="donut-pct" id="donut-pct">0%</span>
+            <span class="donut-lbl">Match</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:1.6rem;font-weight:800;" id="fit-label-big">—</div>
+          <div style="color:var(--muted);font-size:0.82rem;margin-top:4px;">Overall candidate fit</div>
+        </div>
+      </div>
+
+      <!-- Skills breakdown -->
+      <div class="form-panel" style="margin-bottom:24px;">
+        <div class="panel-title">Skills Breakdown</div>
+        <div>
+          <div class="skills-title" style="color:var(--accent);">✓ Matched Skills</div>
+          <div class="skills-row" id="g-matched-chips"></div>
+        </div>
+        <div>
+          <div class="skills-title" style="color:var(--danger);">✗ Missing Skills</div>
+          <div class="skills-row" id="g-missing-chips"></div>
+        </div>
+        <div>
+          <div class="skills-title" style="color:var(--accent2);">+ Bonus Skills</div>
+          <div class="skills-row" id="g-bonus-chips"></div>
+        </div>
+      </div>
+
+      <!-- Category breakdown -->
+      <div class="form-panel">
+        <div class="panel-title">Category Breakdown</div>
+        <div class="category-grid" id="cat-grid"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /container -->
+
+<script>
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+async function rankResumes() {
+  const jd = document.getElementById('jd-input').value.trim();
+  const category = document.getElementById('category-select').value;
+  const topN = document.getElementById('top-n').value;
+
+  const errBox = document.getElementById('rank-error');
+  errBox.style.display = 'none';
+
+  if (!jd) {
+    errBox.textContent = 'Please enter a job description.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('rank-btn');
+  btn.disabled = true;
+  document.getElementById('rank-loading').style.display = 'block';
+  document.getElementById('results-section').style.display = 'none';
+
+  try {
+    const res = await fetch('/rank', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({job_description: jd, category, top_n: topN})
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errBox.textContent = data.error || 'Something went wrong.';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    renderResults(data.results);
+  } catch(e) {
+    errBox.textContent = 'Server error. Make sure Flask is running.';
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    document.getElementById('rank-loading').style.display = 'none';
+  }
+}
+
+function renderResults(results) {
+  document.getElementById('results-count').textContent = `${results.length} candidates ranked`;
+  const list = document.getElementById('results-list');
+  list.innerHTML = '';
+
+  results.forEach((r, i) => {
+    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-n';
+    const matchedChips = r.matched_skills.slice(0,8).map(s =>
+      `<span class="skill-chip chip-matched">${s}</span>`).join('');
+    const missingChips = r.missing_skills.slice(0,6).map(s =>
+      `<span class="skill-chip chip-missing">${s}</span>`).join('');
+
+    const bars = [
+      {label:'Skill Match', val:r.skill_score, color:'var(--accent)'},
+      {label:'TF-IDF',      val:r.tfidf_score, color:'var(--accent2)'},
+      {label:'Experience',  val:r.exp_score,   color:'var(--accent3)'},
+      {label:'Education',   val:r.edu_score,   color:'#a78bfa'},
+    ];
+    const barsHtml = bars.map(b =>
+      `<div class="bar-row">
+        <span class="bar-label">${b.label}</span>
+        <div class="bar-track"><div class="bar-fill" data-w="${b.val}" style="background:${b.color};width:0%"></div></div>
+        <span class="bar-val">${b.val}%</span>
+      </div>`).join('');
+
+    const card = document.createElement('div');
+    card.className = 'candidate-card';
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-left">
+          <div class="rank-badge ${rankClass}">#${r.rank}</div>
+          <div class="card-meta">
+            <div class="candidate-cat">${r.category}</div>
+            <div class="candidate-tags">
+              ${r.experience_years > 0 ? `<span class="tag tag-exp">${r.experience_years}yr exp</span>` : ''}
+              <span class="tag tag-edu">${r.education}</span>
+            </div>
+          </div>
+        </div>
+        <div class="score-circle">
+          <div class="score-num">${r.final_score}</div>
+          <div class="score-label">Score</div>
+          <div class="fit-pill" style="background:${r.fit_color}22;color:${r.fit_color};border:1px solid ${r.fit_color}44">${r.fit_label}</div>
+        </div>
+      </div>
+      <div class="score-bars">${barsHtml}</div>
+      <div class="skills-section">
+        ${matchedChips.length ? `<div class="skills-title" style="color:var(--accent)">✓ Matched</div><div class="skills-row">${matchedChips}</div>` : ''}
+        ${missingChips.length ? `<div class="skills-title" style="color:var(--danger)">✗ Missing</div><div class="skills-row">${missingChips}</div>` : ''}
+      </div>
+      <button class="card-toggle" onclick="toggleDetail(this)">▶ Show resume preview</button>
+      <div class="card-detail">
+        <div class="preview-text">${escHtml(r.resume_preview)}</div>
+      </div>`;
+    list.appendChild(card);
+  });
+
+  document.getElementById('results-section').style.display = 'block';
+
+  // Animate bars after render
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill[data-w]').forEach(b => {
+      b.style.width = b.dataset.w + '%';
+    });
+  }, 100);
+}
+
+function toggleDetail(btn) {
+  const detail = btn.nextElementSibling;
+  const open = detail.classList.toggle('open');
+  btn.textContent = (open ? '▼ Hide' : '▶ Show') + ' resume preview';
+}
+
+async function runGapAnalysis() {
+  const resume = document.getElementById('gap-resume').value.trim();
+  const jd = document.getElementById('gap-jd').value.trim();
+  const errBox = document.getElementById('gap-error');
+  errBox.style.display = 'none';
+
+  if (!resume || !jd) {
+    errBox.textContent = 'Please fill in both fields.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('gap-btn');
+  btn.disabled = true;
+  document.getElementById('gap-loading').style.display = 'block';
+  document.getElementById('gap-result').style.display = 'none';
+
+  try {
+    const res = await fetch('/gap_analysis', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({resume_text: resume, jd_text: jd})
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errBox.textContent = data.error;
+      errBox.style.display = 'block';
+      return;
+    }
+    renderGap(data);
+  } catch(e) {
+    errBox.textContent = 'Server error.';
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    document.getElementById('gap-loading').style.display = 'none';
+  }
+}
+
+function renderGap(data) {
+  const g = data.gap;
+
+  document.getElementById('g-matched').textContent = g.total_matched;
+  document.getElementById('g-missing').textContent = g.total_missing;
+  document.getElementById('g-bonus').textContent   = g.total_bonus;
+  document.getElementById('g-total').textContent   = g.total_required;
+
+  document.getElementById('donut-pct').textContent = g.match_percent + '%';
+  document.getElementById('fit-label-big').textContent = g.fit_label;
+  document.getElementById('fit-label-big').style.color = g.fit_color;
+
+  // Animate donut
+  const circ = 2 * Math.PI * 60;
+  const offset = circ * (1 - g.match_percent / 100);
+  const circle = document.getElementById('donut-circle');
+  circle.style.stroke = g.fit_color;
+  setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
+
+  // Chips
+  const mc = document.getElementById('g-matched-chips');
+  const mi = document.getElementById('g-missing-chips');
+  const mb = document.getElementById('g-bonus-chips');
+  mc.innerHTML = g.matched_skills.map(s => `<span class="skill-chip chip-matched">${s}</span>`).join('') || '<span style="color:var(--muted);font-size:0.75rem">None</span>';
+  mi.innerHTML = g.missing_skills.map(s => `<span class="skill-chip chip-missing">${s}</span>`).join('') || '<span style="color:var(--muted);font-size:0.75rem">None</span>';
+  mb.innerHTML = g.bonus_skills.map(s   => `<span class="skill-chip chip-bonus">${s}</span>`).join('')   || '<span style="color:var(--muted);font-size:0.75rem">None</span>';
+
+  // Category breakdown
+  const jdCats = data.jd_categories;
+  const resCats = data.resume_categories;
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = '';
+  Object.entries(jdCats).forEach(([cat, jdSkills]) => {
+    const resSkills = new Set(resCats[cat] || []);
+    const jdSet = new Set(jdSkills);
+    const matched = [...jdSet].filter(s => resSkills.has(s));
+    const pct = Math.round(matched.length / jdSet.size * 100);
+    grid.innerHTML += `
+      <div class="cat-row">
+        <div class="cat-name">${cat}</div>
+        <div class="cat-bar-track">
+          <div class="cat-bar-fill" style="width:0%" data-w="${pct}"></div>
+        </div>
+        <div class="cat-score">${pct}% (${matched.length}/${jdSet.size})</div>
+      </div>`;
+  });
+
+  document.getElementById('gap-result').style.display = 'block';
+  setTimeout(() => {
+    document.querySelectorAll('.cat-bar-fill[data-w]').forEach(b => {
+      b.style.width = b.dataset.w + '%';
+    });
+  }, 100);
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
