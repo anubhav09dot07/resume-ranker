@@ -356,7 +356,7 @@ This project is open source and available for educational and commercial use.
 **Anubhav Vyas**
 - Email: 09anubhavvyas11@gmail.com
 - GitHub: [@anubhav09dot07](https://github.com/anubhav09dot07)
-- LinkedIn: [Add your LinkedIn profile]
+- LinkedIn: https://www.linkedin.com/in/anubhav-vyas-04701332a/
 
 ---
 
